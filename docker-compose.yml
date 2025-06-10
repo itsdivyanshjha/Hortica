@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  plantbuilder-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/plantbuilder
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - STRIPE_SECRET_KEY=your-stripe-secret-key
+      - STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+      - SENDGRID_API_KEY=your-sendgrid-api-key
+      - ADMIN_EMAIL=admin@plantbuilder.com
+    depends_on:
+      - mongodb
+    networks:
+      - plantbuilder-network
+
+  mongodb:
+    image: mongo:7.0
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=plantbuilder
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - plantbuilder-network
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=password
+    depends_on:
+      - mongodb
+    networks:
+      - plantbuilder-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  plantbuilder-network:
+    driver: bridge 
