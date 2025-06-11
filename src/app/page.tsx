@@ -1,9 +1,20 @@
+'use client';
+
+import { useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Leaf, Home, Sun, Droplets, Heart } from 'lucide-react';
+import useAuthStore from '@/stores/authStore';
 
 export default function HomePage() {
+  const { user, isAuthenticated, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Hero Section */}
@@ -25,13 +36,37 @@ export default function HomePage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" className="text-lg px-8 py-6 rounded-full">
-                Start Building
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-full">
-                Browse Plants
-              </Button>
+              {isAuthenticated && user ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button size="lg" className="text-lg px-8 py-6 rounded-full">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-full">
+                    Browse Plants
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth">
+                    <Button size="lg" className="text-lg px-8 py-6 rounded-full">
+                      Start Building
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-full">
+                    Browse Plants
+                  </Button>
+                </>
+              )}
             </div>
+            
+            {/* User greeting */}
+            {isAuthenticated && user && (
+              <p className="mt-4 text-lg text-green-600">
+                Welcome back, {user.name}! 🌱
+              </p>
+            )}
           </div>
         </div>
         
@@ -164,9 +199,19 @@ export default function HomePage() {
             Join thousands of happy plant parents who&apos;ve created their dream green spaces with PlantBuilder.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 text-lg px-8 py-6 rounded-full">
-              Start Your Journey
-            </Button>
+            {isAuthenticated && user ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 text-lg px-8 py-6 rounded-full">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth">
+                <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 text-lg px-8 py-6 rounded-full">
+                  Start Your Journey
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-gray-900 text-lg px-8 py-6 rounded-full">
               Learn More
             </Button>
