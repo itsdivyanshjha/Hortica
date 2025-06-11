@@ -1,196 +1,146 @@
-import mongoose, { Schema } from 'mongoose';
-import { Order as OrderType, CartItem, Address } from '@/types';
+import mongoose, { Schema, Document } from 'mongoose';
+import { Order, PlantConfiguration } from '@/types';
 
-// Address subdocument schema (reused from User model)
-const AddressSchema = new Schema<Address>({
-  type: {
-    type: String,
-    enum: ['home', 'work', 'other'],
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-    maxlength: 100,
-  },
-  street: {
-    type: String,
-    required: true,
-    maxlength: 255,
-  },
-  city: {
-    type: String,
-    required: true,
-    maxlength: 100,
-  },
-  state: {
-    type: String,
-    required: true,
-    maxlength: 100,
-  },
-  postal_code: {
-    type: String,
-    required: true,
-    maxlength: 20,
-  },
-  country: {
-    type: String,
-    required: true,
-    maxlength: 100,
-    default: 'India',
-  },
-  is_default: {
-    type: Boolean,
-    default: false,
-  },
-});
+interface OrderDocument extends Omit<Order, '_id'>, Document {}
 
-// Configuration Item subdocument schema
-const ConfigurationItemSchema = new Schema({
+const plantConfigurationSchema = new Schema({
   plant: {
-    _id: { type: Schema.Types.ObjectId, required: true },
-    name: { type: String, required: true },
-    category: { type: String, enum: ['indoor', 'outdoor'], required: true },
-    price: { type: Number, required: true },
-    images: [{ type: String }],
+    type: Schema.Types.ObjectId,
+    ref: 'Plant',
+    required: true,
   },
   soil: {
-    _id: { type: Schema.Types.ObjectId },
-    name: { type: String },
-    price: { type: Number },
-    description: { type: String },
+    type: Schema.Types.ObjectId,
+    ref: 'Soil',
+    required: true,
   },
   pot: {
-    _id: { type: Schema.Types.ObjectId },
-    name: { type: String },
-    price: { type: Number },
-    material: { type: String },
+    type: Schema.Types.ObjectId,
+    ref: 'Pot',
+    required: true,
   },
-  potColor: { type: String },
-  potSize: { type: String, enum: ['small', 'medium', 'large'] },
-  engraving: {
-    type: {
-      _id: { type: Schema.Types.ObjectId },
-      name: { type: String },
-      price: { type: Number },
-    },
-    text: { type: String },
-    symbol: { type: String },
-    font: { type: String },
-    position: { type: String },
-  },
-});
-
-// Cart Item subdocument schema
-const CartItemSchema = new Schema<CartItem>({
-  _id: {
+  potSize: {
     type: String,
+    enum: ['small', 'medium', 'large'],
     required: true,
   },
-  configuration: {
-    type: ConfigurationItemSchema,
-    required: true,
+  potColor: {
+    type: String,
+  },
+  engraving: {
+    option: {
+      type: {
+        type: String,
+        enum: ['sticker', 'embossing'],
+      },
+      price: Number,
+      description: String,
+      maxCharacters: Number,
+      availableLanguages: [String],
+    },
+    text: {
+      line1: {
+        type: String,
+        required: true,
+      },
+      line2: String,
+    },
   },
   quantity: {
     type: Number,
     required: true,
     min: 1,
   },
-  unit_price: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  total_price: {
+  totalPrice: {
     type: Number,
     required: true,
     min: 0,
   },
 });
 
-// Order schema
-const OrderSchema = new Schema<OrderType>({
-  user_id: {
-    type: String,
-    required: true,
-    index: true,
+const orderSchema = new Schema<OrderDocument>(
+  {
+    userId: {
+      type: String,
+      required: [true, 'User ID is required'],
+    },
+    orderNumber: {
+      type: String,
+      required: [true, 'Order number is required'],
+      unique: true,
+    },
+    configurations: [plantConfigurationSchema],
+    subtotal: {
+      type: Number,
+      required: [true, 'Subtotal is required'],
+      min: [0, 'Subtotal cannot be negative'],
+    },
+    tax: {
+      type: Number,
+      required: [true, 'Tax is required'],
+      min: [0, 'Tax cannot be negative'],
+    },
+    shipping: {
+      type: Number,
+      required: [true, 'Shipping is required'],
+      min: [0, 'Shipping cannot be negative'],
+    },
+    total: {
+      type: Number,
+      required: [true, 'Total is required'],
+      min: [0, 'Total cannot be negative'],
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+      default: 'pending',
+    },
+    shippingAddress: {
+      name: {
+        type: String,
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
+      zipCode: {
+        type: String,
+        required: true,
+      },
+      country: {
+        type: String,
+        required: true,
+        default: 'India',
+      },
+    },
+    paymentMethod: {
+      type: String,
+      required: [true, 'Payment method is required'],
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending',
+    },
   },
-  items: [CartItemSchema],
-  shipping_address: {
-    type: AddressSchema,
-    required: true,
-  },
-  billing_address: {
-    type: AddressSchema,
-    required: true,
-  },
-  payment_method: {
-    type: String,
-    enum: ['stripe', 'paytm', 'cod'],
-    required: true,
-  },
-  payment_status: {
-    type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
-    default: 'pending',
-  },
-  order_status: {
-    type: String,
-    enum: ['received', 'preparing', 'shipped', 'delivered', 'cancelled'],
-    default: 'received',
-  },
-  subtotal: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  shipping_fee: {
-    type: Number,
-    required: true,
-    min: 0,
-    default: 0,
-  },
-  tax_amount: {
-    type: Number,
-    required: true,
-    min: 0,
-    default: 0,
-  },
-  total_amount: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  stripe_payment_intent_id: {
-    type: String,
-  },
-  tracking_number: {
-    type: String,
-  },
-  notes: {
-    type: String,
-    maxlength: 500,
-  },
-  created_at: {
-    type: Date,
-    default: Date.now,
-  },
-  updated_at: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
-// Update the updated_at field before saving
-OrderSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
+// Indexes for faster queries
+orderSchema.index({ userId: 1 });
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
 
-// Indexes for efficient queries
-OrderSchema.index({ user_id: 1, created_at: -1 });
-OrderSchema.index({ order_status: 1 });
-OrderSchema.index({ payment_status: 1 });
-OrderSchema.index({ created_at: -1 });
-
-export default mongoose.models.Order || mongoose.model<OrderType>('Order', OrderSchema); 
+export default mongoose.models.Order || mongoose.model<OrderDocument>('Order', orderSchema); 

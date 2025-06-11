@@ -1,47 +1,43 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
+import { UserWithoutPassword } from '@/types';
 
 // Only require JWT_SECRET in runtime, not during build
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Hash password
-export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(12);
-  return bcrypt.hash(password, salt);
-}
+export const hashPassword = async (password: string): Promise<string> => {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
+};
 
 // Compare password
-export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-  return bcrypt.compare(password, hashedPassword);
-}
+export const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
+  return await bcrypt.compare(password, hashedPassword);
+};
 
 // Generate JWT token
-export function generateToken(userId: string): string {
-  if (!JWT_SECRET) {
-    throw new Error('Please define the JWT_SECRET environment variable');
-  }
-  
+export const generateToken = (user: UserWithoutPassword): string => {
   return jwt.sign(
-    { userId },
+    { 
+      userId: user._id, 
+      email: user.email,
+      name: user.name 
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
-}
+};
 
 // Verify JWT token
-export function verifyToken(token: string): { userId: string } | null {
-  if (!JWT_SECRET) {
-    throw new Error('Please define the JWT_SECRET environment variable');
-  }
-  
+export const verifyToken = (token: string): any => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    return decoded;
-  } catch {
-    return null;
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    throw new Error('Invalid token');
   }
-}
+};
 
 // Extract token from request
 export function getTokenFromRequest(request: NextRequest): string | null {
@@ -58,12 +54,16 @@ export function getTokenFromRequest(request: NextRequest): string | null {
 
 // Middleware to protect routes
 export async function authenticateToken(request: NextRequest): Promise<{ userId: string } | null> {
-  const token = getTokenFromRequest(request);
-  
-  if (!token) {
+  try {
+    const token = getTokenFromRequest(request);
+    
+    if (!token) {
+      return null;
+    }
+    
+    const decoded = verifyToken(token);
+    return decoded;
+  } catch (error) {
     return null;
   }
-  
-  const decoded = verifyToken(token);
-  return decoded;
 } 

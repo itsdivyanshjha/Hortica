@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
 import { comparePassword, generateToken } from '@/lib/auth';
-import { LoginRequest, ApiResponse } from '@/types';
+import { LoginData, ApiResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     // Connect to database
-    await connectDB();
+    await connectToDatabase();
 
     // Parse request body
-    const body: LoginRequest = await request.json();
+    const body: LoginData = await request.json();
     const { email, password } = body;
 
     // Validate required fields
@@ -49,19 +49,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate JWT token
-    const token = generateToken(user._id.toString());
-
-    // Remove password from response
-    const userResponse = {
-      _id: user._id,
+    const userWithoutPassword = {
+      _id: user._id.toString(),
       name: user.name,
       email: user.email,
-      phone: user.phone,
-      role: user.role,
-      addresses: user.addresses,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
+    const token = generateToken(userWithoutPassword);
+
+    // Remove password from response
+    const userResponse = userWithoutPassword;
 
     // Set token in cookie
     const response = NextResponse.json<ApiResponse>({

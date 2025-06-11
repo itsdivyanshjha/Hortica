@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
 import { hashPassword, generateToken } from '@/lib/auth';
-import { SignupRequest, ApiResponse } from '@/types';
+import { SignupData, ApiResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     // Connect to database
-    await connectDB();
+    await connectToDatabase();
 
     // Parse request body
-    const body: SignupRequest = await request.json();
-    const { name, email, password, phone } = body;
+    const body: SignupData = await request.json();
+    const { name, email, password } = body;
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -55,27 +55,22 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      phone: phone?.trim(),
-      role: 'customer',
-      addresses: [],
     });
 
     const savedUser = await newUser.save();
 
     // Generate JWT token
-    const token = generateToken(savedUser._id.toString());
-
-    // Remove password from response
-    const userResponse = {
-      _id: savedUser._id,
+    const userWithoutPassword = {
+      _id: savedUser._id.toString(),
       name: savedUser.name,
       email: savedUser.email,
-      phone: savedUser.phone,
-      role: savedUser.role,
-      addresses: savedUser.addresses,
-      created_at: savedUser.created_at,
-      updated_at: savedUser.updated_at,
+      createdAt: savedUser.createdAt,
+      updatedAt: savedUser.updatedAt,
     };
+    const token = generateToken(userWithoutPassword);
+
+    // Remove password from response
+    const userResponse = userWithoutPassword;
 
     // Set token in cookie for browser clients
     const response = NextResponse.json<ApiResponse>({

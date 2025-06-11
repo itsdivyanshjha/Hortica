@@ -1,70 +1,82 @@
-import mongoose, { Schema } from 'mongoose';
-import { Plant as PlantType } from '@/types';
+import mongoose, { Schema, Document } from 'mongoose';
+import { Plant } from '@/types';
 
-const PlantSchema = new Schema<PlantType>({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100,
-  },
-  category: {
-    type: String,
-    enum: ['indoor', 'outdoor'],
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-    maxlength: 500,
-  },
-  price: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  images: [{
-    type: String,
-    required: true,
-  }],
-  care_level: {
-    type: String,
-    enum: ['easy', 'medium', 'hard'],
-    required: true,
-  },
-  light_requirement: {
-    type: String,
-    required: true,
-    maxlength: 100,
-  },
-  watering_frequency: {
-    type: String,
-    required: true,
-    maxlength: 100,
-  },
-  size: {
-    type: String,
-    enum: ['small', 'medium', 'large'],
-    required: true,
-  },
-  created_at: {
-    type: Date,
-    default: Date.now,
-  },
-  updated_at: {
-    type: Date,
-    default: Date.now,
-  },
-});
+interface PlantDocument extends Omit<Plant, '_id'>, Document {}
 
-// Update the updated_at field before saving
-PlantSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
+const plantSchema = new Schema<PlantDocument>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Plant name is required'],
+      trim: true,
+    },
+    slug: {
+      type: String,
+      required: [true, 'Plant slug is required'],
+      unique: true,
+      lowercase: true,
+    },
+    description: {
+      type: String,
+      required: [true, 'Plant description is required'],
+    },
+    category: {
+      type: String,
+      enum: ['indoor', 'outdoor'],
+      required: [true, 'Plant category is required'],
+    },
+    image: {
+      type: String,
+      required: [true, 'Plant image is required'],
+    },
+    basePrice: {
+      type: Number,
+      required: [true, 'Base price is required'],
+      min: [0, 'Price cannot be negative'],
+    },
+    careInstructions: {
+      sunlight: {
+        type: String,
+        required: true,
+      },
+      watering: {
+        type: String,
+        required: true,
+      },
+      humidity: {
+        type: String,
+        required: true,
+      },
+      temperature: {
+        type: String,
+        required: true,
+      },
+    },
+    benefits: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+    stock: {
+      type: Number,
+      required: [true, 'Stock is required'],
+      min: [0, 'Stock cannot be negative'],
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-// Index for search optimization
-PlantSchema.index({ name: 'text', description: 'text' });
-PlantSchema.index({ category: 1, care_level: 1, size: 1 });
+// Indexes for faster queries
+plantSchema.index({ slug: 1 });
+plantSchema.index({ category: 1 });
+plantSchema.index({ isActive: 1 });
 
-export default mongoose.models.Plant || mongoose.model<PlantType>('Plant', PlantSchema); 
+export default mongoose.models.Plant || mongoose.model<PlantDocument>('Plant', plantSchema); 

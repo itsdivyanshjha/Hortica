@@ -86,9 +86,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <p><strong>Name:</strong> {user.name}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
-                <p><strong>Role:</strong> {user.role}</p>
-                <p><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
+                <p><strong>Member since:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
               <Button className="w-full mt-4" variant="outline">
                 <Settings className="w-4 h-4 mr-2" />
@@ -112,7 +110,10 @@ export default function DashboardPage() {
               <p className="text-gray-600 mb-4">
                 Use our step-by-step configurator to create your dream plant setup.
               </p>
-              <Button className="w-full">
+              <Button 
+                className="w-full"
+                onClick={() => router.push('/configurator')}
+              >
                 Start Building
               </Button>
             </CardContent>
@@ -157,9 +158,13 @@ export default function DashboardPage() {
             You&apos;re all set to start building your perfect plant. Our configurator will guide you through 
             selecting the ideal plant, soil, pot, and personalization options.
           </p>
-          <Button size="lg" className="bg-green-600 hover:bg-green-700">
-            Start Your First Build
-          </Button>
+                        <Button 
+                size="lg" 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => router.push('/configurator')}
+              >
+                Start Your First Build
+              </Button>
         </div>
       </main>
     </div>

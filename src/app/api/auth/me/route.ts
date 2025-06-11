@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
 import { authenticateToken } from '@/lib/auth';
 import { ApiResponse } from '@/types';
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Connect to database
-    await connectDB();
+    await connectToDatabase();
 
     // Find user by ID
     const user = await User.findById(authResult.userId).select('-password');
